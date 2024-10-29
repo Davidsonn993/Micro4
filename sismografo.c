@@ -7,12 +7,10 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
-
+//Dependencias............................................
 #include <stdint.h>
 #include "gyr_spi.c"
 #include "gyr_spi.h"
-//#include "clock.h"
-
 #include <math.h>
 #include "console.h"
 #include "sdram.h"
@@ -20,15 +18,12 @@
 #include "gfx.h"
 #include <stdio.h>
 
+//variables....................................................
 #define LED_DISCO_GREEN_PORT GPIOG
 #define LED_DISCO_GREEN_PIN GPIO13
-
 #define USART_CONSOLE USART1
 
-
-
-
-// Declaraciones de funciones
+// Declaraciones de funciones....................................
 int _write(int file, char *ptr, int len);
 void draw_battery_level(int level);
 void draw_xyz_values(int x, int y, int z);
@@ -36,7 +31,10 @@ void draw_usb_status(int connected);
 static void spi_setup(void);
 void gpio_setup_for_ledRed(void);
 
-static void usart_setup(void)
+//Funciones:............................................................................
+
+
+static void usart_setup(void) //funcion para configurar el puerto serial.........
 {
         usart_set_baudrate(USART_CONSOLE, 115200);
 	usart_set_databits(USART_CONSOLE, 8);
@@ -49,7 +47,7 @@ static void usart_setup(void)
 	usart_enable(USART_CONSOLE);
 }
 
-int _write(int file, char *ptr, int len)
+int _write(int file, char *ptr, int len) //Funcion para poder escribir al puerto
 {
 	int i;
 
@@ -66,17 +64,7 @@ int _write(int file, char *ptr, int len)
 	return -1;
 }
 
-//static void gpio_setup(void)
-//{
-//	/* Enable GPIOG clock. */
-//	rcc_periph_clock_enable(RCC_GPIOG);
-//
-//	/* Set GPIO13 (in GPIO port G) to 'output push-pull'. */
-//	gpio_mode_setup(GPIOG, GPIO_MODE_OUTPUT,
-//			GPIO_PUPD_NONE, GPIO13);
-//}
-
-static void button_setup(void)
+static void button_setup(void) //Funcion para configurar el boton del puerto PA0
 {
 	/* Enable GPIOA clock. */
 	rcc_periph_clock_enable(RCC_GPIOA);
@@ -85,7 +73,7 @@ static void button_setup(void)
 	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO0);
 }
 
-static void adc_setup(void)
+static void adc_setup(void) //Funcion para configurar el puerto ADC...................
 {
 	gpio_mode_setup(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO2);
 	
@@ -99,7 +87,7 @@ static void adc_setup(void)
 }
 
 
-static uint16_t read_adc_naiive(uint8_t channel)
+static uint16_t read_adc_naiive(uint8_t channel)  //funcion para leer entrada ADC.........
 {
 	uint8_t channel_array[16];
 	channel_array[0] = channel;
@@ -110,7 +98,7 @@ static uint16_t read_adc_naiive(uint8_t channel)
 	return reg16;
 }
 
-int main(void)
+int main(void)// funcion principal donde iniciamos los dispositivos..........
 {
 	char lcd_out[100];
 	int i;
@@ -146,9 +134,9 @@ int main(void)
 	gpio_mode_setup(LED_DISCO_GREEN_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
 			LED_DISCO_GREEN_PIN);
 
-	while (1) {
+	while (1) { //bucle infinito
 		
-		// Leer el valor del ADC y calcular el nivel de batería
+	// Leer el valor del ADC y calcular el nivel de batería
         uint16_t input_adc0 = read_adc_naiive(2);
         uint16_t level = input_adc0 / 41;  // Escalar el valor para obtener un rango entre 0 y 100
         uint16_t connected;
@@ -160,12 +148,10 @@ int main(void)
         z = gyr_readZ()/10000;
         
        
-        gfx_fillScreen(LCD_BLACK);
+        gfx_fillScreen(LCD_BLACK); //fondo nego
        
        // Mostrar lecturas en pantalla
-       
-        
-        draw_xyz_values( x, y, z); 
+       draw_xyz_values( x, y, z); 
         
         // Borrar el área anterior de la batería antes de redibujar
         gfx_fillRect(42, 40, 100, 20, LCD_BLACK);  // Borrar la barra anterior
@@ -174,7 +160,7 @@ int main(void)
         draw_battery_level(level);
          
         
-        //configuro la alerta por si la bateria baja de 7c
+        //configuro la alerta por si la bateria baja de 7v
         if (level<=42.72){
         alarma=1;
         gpio_toggle(GPIOG, GPIO14);
@@ -185,7 +171,7 @@ int main(void)
         alarma=0;
         }
         
-      //configuro la coneccion serial
+      //configuro la conexión serial
        if (gpio_get(GPIOA, GPIO0)) {
         connected=1;
         draw_usb_status(connected);
@@ -230,6 +216,7 @@ void draw_battery_level(int level) {
     return level;
 }
 
+//Funcion para dibujar valores de los ejes en la pantalla LCD........
 void draw_xyz_values(int x, int y, int z) {
     gfx_setTextColor(LCD_WHITE, LCD_BLACK);
     gfx_setTextSize(2);
@@ -275,7 +262,7 @@ void draw_usb_status(int connected) {
     }
 
 }
-
+//Funcion para configurar el boton rojo de alarma
 void gpio_setup_for_ledRed(void) {
     rcc_periph_clock_enable(RCC_GPIOG);
     gpio_mode_setup(GPIOG, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO14);
